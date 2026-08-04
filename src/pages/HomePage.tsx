@@ -45,6 +45,8 @@ export default function HomePage() {
   const [parseError, setParseError] = useState<string | null>(null);
   const [previewWords, setPreviewWords] = useState<WordItem[] | null>(null);
   const [isPreviewingCustom, setIsPreviewingCustom] = useState(false);
+  const [newWordInput, setNewWordInput] = useState("");
+  const [newWordError, setNewWordError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const removePreviewWord = (wordId: number) => {
@@ -56,6 +58,42 @@ export default function HomePage() {
   const removeCustomWord = (wordId: number) => {
     const next = customWords.filter((w) => w.id !== wordId);
     setCustomWords(next, customFileName);
+  };
+
+  const hasChinese = (text: string) => /[\u4e00-\u9fa5]/.test(text);
+
+  const handleAddCustomWord = () => {
+    const trimmed = newWordInput.trim();
+    if (!trimmed) {
+      setNewWordError("请输入要添加的词语");
+      return;
+    }
+    if (!hasChinese(trimmed)) {
+      setNewWordError("词语必须包含中文字符哦");
+      return;
+    }
+    if (trimmed.length > 10) {
+      setNewWordError("词语长度建议在 1~10 个字之间");
+      return;
+    }
+    if (!previewWords) return;
+    const exists = previewWords.some((w) => w.word === trimmed);
+    if (exists) {
+      setNewWordError("这个词语已经在列表里啦～");
+      return;
+    }
+    const newItem: WordItem = {
+      id: Date.now() + Math.floor(Math.random() * 10000),
+      word: trimmed,
+      pinyin: wordToPinyin(trimmed),
+      level: 2,
+    };
+    setPreviewWords([...previewWords, newItem]);
+    if (isPreviewingCustom) {
+      setCustomWords([...customWords, newItem], customFileName);
+    }
+    setNewWordInput("");
+    setNewWordError(null);
   };
 
   const toggleCustomPreview = (open: boolean) => {
@@ -470,6 +508,48 @@ export default function HomePage() {
                         </button>
                       </>
                     )}
+                  </div>
+                </div>
+
+                <div className="mb-6 bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 rounded-2xl p-4 md:p-5 border border-indigo-100">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="text-xl">➕</div>
+                    <div className="text-base font-black text-gray-700">
+                      手动添加词语或成语
+                    </div>
+                    <div className="text-xs text-gray-400 ml-2">
+                      没识别出的词自己加进来～
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        value={newWordInput}
+                        onChange={(e) => {
+                          setNewWordInput(e.target.value);
+                          if (newWordError) setNewWordError(null);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleAddCustomWord();
+                        }}
+                        placeholder="输入词语或成语，比如：全神贯注、春华秋实…（按 Enter 添加）"
+                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-400 focus:outline-none focus:ring-4 focus:ring-indigo-100 text-gray-800 font-bold placeholder:text-gray-400 placeholder:font-normal transition-all"
+                        maxLength={20}
+                      />
+                      {newWordError && (
+                        <div className="mt-2 text-sm text-rose-500 font-medium px-1">
+                          ⚠️ {newWordError}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={handleAddCustomWord}
+                      className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+                    >
+                      <Sparkles size={18} />
+                      加入词库
+                    </button>
                   </div>
                 </div>
 
